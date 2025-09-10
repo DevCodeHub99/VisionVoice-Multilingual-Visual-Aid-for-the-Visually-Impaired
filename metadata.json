@@ -1,0 +1,7 @@
+{
+  "name": "Multilingual Visual Aid",
+  "description": "An application that uses AI to describe surroundings or read text from images in multiple languages, designed to assist visually impaired users.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
