@@ -1,14 +1,15 @@
-
 import React from 'react';
 
 const Header: React.FC = () => {
   return (
-    <header className="w-full bg-gray-800 p-4 shadow-lg">
-      <div className="container mx-auto flex items-center justify-center">
-        <i className="fa-solid fa-eye text-amber-400 text-3xl mr-4"></i>
-        <h1 className="text-3xl font-bold text-white tracking-wider">
-          Multilingual Visual Aid
+    <header className="w-full text-center py-8">
+      <div className="container mx-auto">
+        <h1 className="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400 mb-2">
+          VisionVoice
         </h1>
+        <p className="text-lg md:text-xl text-gray-400">
+          Multilingual Visual Aid for the Visually Impaired
+        </p>
       </div>
     </header>
   );

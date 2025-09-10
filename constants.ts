@@ -1,8 +1,8 @@
-
 import { LanguageOption, Task } from './types';
 
 export const LANGUAGES: LanguageOption[] = [
   { code: 'en-US', name: 'English' },
+  { code: 'hi-IN', name: 'हिन्दी' },
   { code: 'es-ES', name: 'Español' },
   { code: 'fr-FR', name: 'Français' },
   { code: 'de-DE', name: 'Deutsch' },

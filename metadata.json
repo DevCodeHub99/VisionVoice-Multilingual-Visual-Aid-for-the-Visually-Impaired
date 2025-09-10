@@ -1,6 +1,6 @@
 {
-  "name": "Multilingual Visual Aid",
-  "description": "An application that uses AI to describe surroundings or read text from images in multiple languages, designed to assist visually impaired users.",
+  "name": "VisionVoice",
+  "description": "A modern, multilingual visual aid for the visually impaired, powered by AI.",
   "requestFramePermissions": [
     "camera"
   ]

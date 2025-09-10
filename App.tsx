@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Task, LanguageOption } from './types';
 import { LANGUAGES } from './constants';
@@ -135,43 +134,43 @@ const App: React.FC = () => {
 
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center" aria-busy={isLoading}>
+        <div className="min-h-screen bg-slate-900 text-gray-100 flex flex-col items-center" aria-busy={isLoading}>
             <Header />
             {isCameraOpen && <CameraCapture onCapture={handleCameraCapture} onClose={() => setIsCameraOpen(false)} />}
             <main className="container mx-auto p-4 md:p-8 flex-grow w-full">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Left Column: Input & Controls */}
-                    <section className="bg-gray-800 p-6 rounded-xl shadow-lg flex flex-col space-y-6">
-                        <h2 className="text-2xl font-semibold text-amber-400 border-b-2 border-amber-500 pb-2">1. Provide an Image</h2>
+                    <section className="bg-slate-800/50 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-slate-700 flex flex-col space-y-6">
+                        <h2 className="text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400 border-b-2 border-slate-600 pb-2">1. Provide an Image</h2>
                         <div className="flex flex-col sm:flex-row gap-4">
-                            <button onClick={() => fileInputRef.current?.click()} className="flex-1 text-lg px-6 py-3 bg-teal-600 rounded-lg font-semibold hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-opacity-75 transition duration-200 flex items-center justify-center">
+                            <button onClick={() => fileInputRef.current?.click()} className="flex-1 text-lg px-6 py-3 bg-purple-600 rounded-lg font-semibold hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75 transition duration-200 flex items-center justify-center">
                                 <i className="fa-solid fa-upload mr-3"></i> Upload Image
                             </button>
-                             <button onClick={() => setIsCameraOpen(true)} className="flex-1 text-lg px-6 py-3 bg-indigo-600 rounded-lg font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75 transition duration-200 flex items-center justify-center">
+                             <button onClick={() => setIsCameraOpen(true)} className="flex-1 text-lg px-6 py-3 bg-cyan-600 rounded-lg font-semibold hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-75 transition duration-200 flex items-center justify-center">
                                 <i className="fa-solid fa-camera-retro mr-3"></i> Use Camera
                             </button>
                             <input type="file" ref={fileInputRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
                         </div>
                         {image && (
-                            <div className="mt-4 border-4 border-gray-700 rounded-lg p-2 bg-gray-900">
+                            <div className="mt-4 border-2 border-slate-700 rounded-lg p-2 bg-slate-900">
                                 <img src={image} alt="User-provided for analysis" className="max-h-64 w-full object-contain rounded" />
                             </div>
                         )}
 
-                        <h2 className="text-2xl font-semibold text-amber-400 border-b-2 border-amber-500 pb-2">2. Choose a Task</h2>
-                        <div className="flex bg-gray-700 rounded-lg p-1">
-                            <button onClick={() => setTask(Task.DESCRIBE)} className={`flex-1 p-3 rounded-md font-semibold transition ${task === Task.DESCRIBE ? 'bg-amber-500 text-white' : 'hover:bg-gray-600'}`}>Describe Scene</button>
-                            <button onClick={() => setTask(Task.READ)} className={`flex-1 p-3 rounded-md font-semibold transition ${task === Task.READ ? 'bg-amber-500 text-white' : 'hover:bg-gray-600'}`}>Read Text</button>
+                        <h2 className="text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400 border-b-2 border-slate-600 pb-2">2. Choose a Task</h2>
+                        <div className="flex bg-slate-700/50 rounded-lg p-1">
+                            <button onClick={() => setTask(Task.DESCRIBE)} className={`flex-1 p-3 rounded-md font-semibold transition ${task === Task.DESCRIBE ? 'bg-purple-600 text-white' : 'hover:bg-slate-600'}`}>Describe Scene</button>
+                            <button onClick={() => setTask(Task.READ)} className={`flex-1 p-3 rounded-md font-semibold transition ${task === Task.READ ? 'bg-purple-600 text-white' : 'hover:bg-slate-600'}`}>Read Text</button>
                         </div>
                         
-                        <h2 className="text-2xl font-semibold text-amber-400 border-b-2 border-amber-500 pb-2">3. Select Language</h2>
-                        <select value={language} onChange={(e) => setLanguage(e.target.value)} className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-lg">
+                        <h2 className="text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400 border-b-2 border-slate-600 pb-2">3. Select Language</h2>
+                        <select value={language} onChange={(e) => setLanguage(e.target.value)} className="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-lg">
                             {LANGUAGES.map((lang: LanguageOption) => (
                                 <option key={lang.code} value={lang.code}>{lang.name}</option>
                             ))}
                         </select>
                         
-                        <button onClick={handleSubmit} disabled={isLoading || !image} className="w-full text-xl px-6 py-4 mt-4 bg-green-600 rounded-lg font-bold hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 disabled:bg-gray-500 disabled:cursor-not-allowed transition duration-200 flex items-center justify-center">
+                        <button onClick={handleSubmit} disabled={isLoading || !image} className="w-full text-xl px-6 py-4 mt-4 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg font-bold hover:from-green-600 hover:to-teal-600 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75 disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center">
                            {isLoading ? (
                                 <i className="fa-solid fa-spinner fa-spin mr-3"></i>
                            ) : (
@@ -182,10 +181,10 @@ const App: React.FC = () => {
                     </section>
 
                     {/* Right Column: Output */}
-                    <section className="bg-gray-800 p-6 rounded-xl shadow-lg flex flex-col">
-                        <h2 className="text-2xl font-semibold text-amber-400 border-b-2 border-amber-500 pb-2 mb-4">AI Generated Response</h2>
-                        {error && <div className="bg-red-900 border border-red-700 text-red-200 p-4 rounded-lg">{error}</div>}
-                        <div className="flex-grow bg-gray-900 rounded-lg p-4 overflow-y-auto min-h-[200px]" aria-live="polite">
+                    <section className="bg-slate-800/50 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-slate-700 flex flex-col">
+                        <h2 className="text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400 border-b-2 border-slate-600 pb-2 mb-4">AI Generated Response</h2>
+                        {error && <div className="bg-red-900/50 border border-red-700 text-red-200 p-4 rounded-lg">{error}</div>}
+                        <div className="flex-grow bg-slate-900/70 rounded-lg p-4 overflow-y-auto min-h-[200px] ring-1 ring-slate-700" aria-live="polite">
                             {isLoading ? (
                                 <div className="flex flex-col items-center justify-center h-full text-gray-400">
                                     <i className="fa-solid fa-spinner fa-spin text-4xl mb-4"></i>
@@ -196,11 +195,11 @@ const App: React.FC = () => {
                             )}
                         </div>
                         {output && !error && (
-                            <div className="flex justify-center items-center space-x-4 mt-4 pt-4 border-t border-gray-700">
-                                <button onClick={toggleSpeech} className="px-6 py-3 text-lg bg-blue-600 rounded-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-center">
+                            <div className="flex justify-center items-center space-x-4 mt-4 pt-4 border-t border-slate-700">
+                                <button onClick={toggleSpeech} className="px-6 py-3 text-lg bg-blue-600 rounded-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-center transition-colors">
                                     <i className={`fa-solid ${isSpeaking ? 'fa-pause' : 'fa-play'} mr-2`}></i> {isSpeaking ? 'Pause' : 'Read Aloud'}
                                 </button>
-                                <button onClick={stopSpeech} className="px-6 py-3 text-lg bg-red-600 rounded-lg font-semibold hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 flex items-center justify-center">
+                                <button onClick={stopSpeech} className="px-6 py-3 text-lg bg-red-600 rounded-lg font-semibold hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 flex items-center justify-center transition-colors">
                                     <i className="fa-solid fa-stop mr-2"></i> Stop
                                 </button>
                             </div>

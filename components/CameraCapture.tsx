@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 
 interface CameraCaptureProps {
@@ -52,8 +51,8 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose }) => 
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center z-50 p-4">
-      <div className="relative w-full max-w-2xl bg-gray-800 rounded-lg p-4 shadow-xl">
+    <div className="fixed inset-0 bg-slate-900 bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center z-50 p-4">
+      <div className="relative w-full max-w-2xl bg-slate-800 rounded-lg p-4 shadow-xl border border-slate-700">
         {error ? (
           <p className="text-red-400 text-center">{error}</p>
         ) : (
@@ -64,13 +63,13 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose }) => 
           <button
             onClick={handleCapture}
             disabled={!!error}
-            className="px-8 py-3 bg-amber-500 text-white font-semibold rounded-lg shadow-md hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-opacity-75 disabled:bg-gray-500 disabled:cursor-not-allowed flex items-center"
+            className="px-8 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75 disabled:bg-gray-500 disabled:cursor-not-allowed flex items-center transition-colors"
           >
             <i className="fa-solid fa-camera mr-2"></i> Capture
           </button>
           <button
             onClick={onClose}
-            className="px-8 py-3 bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75"
+            className="px-8 py-3 bg-slate-600 text-white font-semibold rounded-lg shadow-md hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-opacity-75 transition-colors"
           >
             <i className="fa-solid fa-times mr-2"></i> Close
           </button>
