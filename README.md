@@ -1,173 +1,187 @@
 <div align="center">
 
+# 👓 VisionVoice
+
 ## 🚀 [**Try VisionVoice Live**](https://visionvoiceai.vercel.app/)
 
-_A modern, multilingual visual aid for the visually impaired, powered by AI._
+_A modern, multilingual visual aid for the visually impaired, powered by Google Gemini AI._
+
+[![React](https://img.shields.io/badge/React-19.1.1-61DAFB?logo=react&logoColor=white)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-6.x-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Gemini](https://img.shields.io/badge/AI-Gemini_2.5_Flash-4285F4?logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
 
 </div>
 
-VisionVoice is a React-based web application that uses Google's Gemini AI to help visually impaired users understand their surroundings through camera capture and AI-powered image analysis.
+---
 
-## ✨ Features
+## 📖 Overview
 
-<div align="center">
+**VisionVoice** is an accessibility-first web application designed to help visually impaired users interact with their environment. By combining real-time camera processing with Google's state-of-the-art **Gemini 2.5 Flash** model, it provides descriptive narration and text extraction in multiple languages.
 
-|             📸 **Camera Integration**             |                     🤖 **AI-Powered Analysis**                      |                                          🌍 **Multilingual Support**                                          |
-| :-----------------------------------------------: | :-----------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------------: |
-| Capture images directly from your device's camera | Uses Google Gemini 2.5 Flash model for intelligent image processing | Available in 8 languages including English, Hindi, Spanish, French, German, Japanese, Italian, and Portuguese |
+---
 
-</div>
+## ✨ Key Features
 
-### 🎯 Dual Functionality
+### 🎯 Dual Analysis Modes
+-   **Environmental Description**: Detailed, vivid narrations of scenes, objects, and people to improve spatial awareness.
+-   **Text Reading (OCR)**: Accurate extraction and reading of text from documents, labels, signs, and menus.
 
-- **Describe**: Get detailed descriptions of images for environmental awareness
-- **Read**: Extract and read text from images (OCR functionality)
+### 🌍 Multilingual Intelligence
+-   Supports **8 major languages**: English, हिन्दी (Hindi), Español, Français, Deutsch, 日本語 (Japanese), Italiano, and Português.
+-   AI prompts and responses are dynamically localized based on user selection.
 
-### ♿ Accessibility-First Design
+### ♿ Accessibility & UX
+-   **Automated Speech (TTS)**: Instant audio playback of AI analysis using the Web Speech API.
+-   **Haptic Feedback**: Subtle vibrations provide tactile confirmation for captures, success, and errors.
+-   **Mobile-First Design**: Optimized for one-handed use with large tap targets and a "Camera-as-Background" UI.
+-   **Hybrid Input**: Use the live camera or upload existing images from your gallery.
 
-Built specifically for visually impaired users with screen reader compatibility
+---
 
-## 🛠️ Tech Stack
+## 🛠️ Architecture & Tech Stack
 
-<div align="center">
+### Frontend
+-   **Framework**: React 19.1.1 with Functional Components.
+-   **Logic**: Custom hooks for modular state management (Speech, Haptics, Camera, AI Logic).
+-   **Styling**: Tailwind CSS for high-contrast, modern glassmorphism UI.
+-   **Icons**: Font Awesome (Solid/Regular).
 
-|         Frontend          |           Styling           |    AI Service    | Build Tool |
-| :-----------------------: | :-------------------------: | :--------------: | :--------: |
-| React 19.1.1 + TypeScript | Tailwind CSS + Font Awesome | Google Gemini AI |    Vite    |
+### AI & Services
+-   **Processing**: Google Generative AI (Gemini 2.5 Flash).
+-   **Encoding**: Base64 image conversion for serverless AI transmission.
 
-</div>
-
-## Project Structure
-
-```
+### Code Structure
+```text
 ├── components/
-│   ├── CameraCapture.tsx    # Camera interface and image capture
-│   └── Header.tsx           # App header with branding
+│   ├── CameraCapture.tsx    # Live WebRTC video stream & frame capture
+│   ├── BottomNav.tsx        # Mode switching & primary action triggers
+│   ├── ResultSheet.tsx      # Slide-up modal for AI output & audio controls
+│   └── Header.tsx           # Language & settings interface
+├── hooks/
+│   ├── useSpeech.ts         # Web Speech API wrapper for announcements & results
+│   ├── useHaptics.ts        # Tactile feedback via Navigator.vibrate
+│   ├── useCamera.ts         # Imperative camera handle & capture orchestration
+│   └── useImageProcessing.ts# AI state machine (Loading -> Success -> Error)
 ├── services/
-│   └── geminiService.ts     # Gemini AI integration
-├── App.tsx                  # Main application component
-├── index.tsx               # Application entry point
-├── types.ts                # TypeScript type definitions
-├── constants.ts            # Language options and prompt templates
-├── vite.config.ts          # Vite configuration
-└── metadata.json           # App metadata and permissions
+│   └── geminiService.ts     # Core API integration with Google GenAI
+├── constants.ts             # Multilingual prompt templates & config
+└── types.ts                 # Centralized TypeScript interfaces & Enums
 ```
 
-## Setup and Installation
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
+-   **Node.js**: v18.0.0 or higher.
+-   **API Key**: A valid [Google Gemini API Key](https://aistudio.google.com/).
 
-- Node.js (latest LTS version recommended)
-- A Google Gemini API key
+### Installation
 
-### Installation Steps
+1.  **Clone the Repository**
+    ```bash
+    git clone https://github.com/vikasmukhiya1999/VisionVoice---Multilingual-Visual-Aid-for-the-Visually-Impaired.git
+    cd VisionVoice---Multilingual-Visual-Aid-for-the-Visually-Impaired
+    ```
 
-1. **Clone the repository**:
+2.  **Install Dependencies**
+    ```bash
+    npm install
+    ```
 
-   ```bash
-   git clone https://github.com/vikasmukhiya1999/VisionVoice---Multilingual-Visual-Aid-for-the-Visually-Impaired.git
+3.  **Environment Setup**
+    Create a `.env.local` file:
+    ```env
+    GEMINI_API_KEY=your_actual_api_key_here
+    ```
 
-   cd VisionVoice---Multilingual-Visual-Aid-for-the-Visually-Impaired
-   ```
+4.  **Launch**
+    ```bash
+    npm run dev
+    ```
 
-2. **Install dependencies**:
+---
 
-   ```bash
-   npm install
-   ```
+## � Internal API Documentation
 
-3. **Configure API Key**:
-   Create a `.env.local` file in the root directory and add your Gemini API key:
+### Gemini Service (`generateDescription`)
+-   **Inputs**: `base64Data`, `mimeType`, `task` (Task Enum), `languageName`.
+-   **Logic**: Combines image data with specific prompts:
+    -   *Describe*: "Describe this image in detail for a visually impaired person..."
+    -   *Read*: "Extract all text from this image, reading it from top to bottom..."
 
-   ```env
-   GEMINI_API_KEY=your_api_key_here
-   ```
+### Haptics Hook (`useHaptics`)
+-   Triggers standard browser vibration patterns.
+-   **Standard Pattern**: `50ms` pulse for simple confirmations.
 
-4. **Run the development server**:
+---
 
-   ```bash
-   npm run dev
-   ```
+## 🌐 Browser Requirements
+-   **Camera Access**: Requires HTTPS or localhost for `navigator.mediaDevices`.
+-   **Web Speech API**: Supported on all modern Chrome, Safari, and Edge versions.
+-   **Vibration API**: Primarily supported on Android/Mobile Chrome.
 
-5. **Build for production**:
-   ```bash
-   npm run build
-   ```
-
-## 🚀 Usage
-
-<div align="center">
-
-### How to Use VisionVoice
-
-| Step |       Action        | Description                                                            |
-| :--: | :-----------------: | :--------------------------------------------------------------------- |
-|  1️⃣  | **Select Language** | Choose your preferred language from the dropdown                       |
-|  2️⃣  |   **Choose Task**   | Select "Describe" for image descriptions or "Read" for text extraction |
-|  3️⃣  |  **Capture Image**  | Use the camera interface to take a photo                               |
-|  4️⃣  | **Get AI Response** | Receive audio/text feedback in your selected language                  |
-
-</div>
-
-## 🌍 Supported Languages
-
-<div align="center">
-
-| Language   | Code  | Native Name |
-| :--------- | :---: | :---------: |
-| English    | en-US |   English   |
-| Hindi      | hi-IN |   हिन्दी    |
-| Spanish    | es-ES |   Español   |
-| French     | fr-FR |  Français   |
-| German     | de-DE |   Deutsch   |
-| Japanese   | ja-JP |   日本語    |
-| Italian    | it-IT |  Italiano   |
-| Portuguese | pt-BR |  Português  |
-
-</div>
-
-## API Integration
-
-The app integrates with Google's Gemini 2.5 Flash model through the `geminiService.ts` file, which handles:
-
-- Image processing with base64 encoding
-- Multilingual prompt generation
-- Error handling and user feedback
-- Response formatting
-
-## 🔧 Development
-
-<div align="center">
-
-### Available Scripts
-
-| Command           | Description              |
-| :---------------- | :----------------------- |
-| `npm run dev`     | Start development server |
-| `npm run build`   | Build for production     |
-| `npm run preview` | Preview production build |
-
-</div>
-
-## 🌐 Browser Compatibility
-
-The app requires camera permissions and modern browser support for:
-
-- **Camera API** access
-- **ES6+** JavaScript features
-- **WebRTC** for camera functionality
+---
 
 ## 🤝 Contributing
+Contributions are welcome! Please ensure:
+1.  ♿ **Accessibility** (ARIA labels, screen reader support) is preserved.
+2.  🌍 **Language strings** are accurately translated in `constants.ts`.
+3.  🛡️ **Error Boundaries** are handled to prevent app crashes on camera failure.
+
+---
 
 <div align="center">
 
-_This project is designed to be accessible and inclusive._
+Built with ❤️ for an accessible world.
 
 </div>
 
-When contributing, please ensure:
+## 📖 Code Documentation
 
-- ♿ **Accessibility standards** are maintained
-- 🌍 **New language support** follows the existing pattern in `constants.ts`
-- 🛡️ **Error handling** provides clear user feedback
-- 📝 **Code follows** TypeScript best practices
+### 1. Gemini AI Service (`services/geminiService.ts`)
+
+**Purpose**: Acts as the interface between the client application and Google's Gemini AI API. It handles payload construction and response parsing.
+
+- **Inputs**:
+  - `base64Data`: The visual data in base64 format.
+  - `mimeType`: Image format (e.g., `image/jpeg`).
+  - `task`: Operation mode (`Task.DESCRIBE` or `Task.READ`).
+  - `languageName`: Target response language.
+- **Outputs**: Returns a `Promise<string>` containing the AI's textual description or extracted text.
+- **Example Usage**:
+  ```typescript
+  const description = await generateDescription(base64, "image/jpeg", Task.DESCRIBE, "Hindi");
+  ```
+
+### 2. Image Processing Hook (`hooks/useImageProcessing.ts`)
+
+**Purpose**: Manages the lifecycle of an image analysis request (loading states, errors, and success callbacks).
+
+- **Inputs**: Current language, and callbacks for `onStart`, `onSuccess`, and `onError`.
+- **Outputs**: An object containing `image` (preview), `output` (AI result), `isLoading`, and the `processImage` function.
+- **Example Usage**:
+  ```typescript
+  const { processImage, output, isLoading } = useImageProcessing({ 
+    language: 'en-US',
+    onSuccess: (res) => console.log("AI says:", res)
+  });
+  ```
+
+### 3. Speech Hook (`hooks/useSpeech.ts`)
+
+**Purpose**: Provides Text-to-Speech (TTS) capabilities for app accessibility.
+
+- **Purpose**: Reads back AI results and provides situational announcements for visually impaired users.
+- **Example Usage**:
+  ```typescript
+  const { speak } = useSpeech({ language: 'en-US' });
+  speak("The camera is ready.");
+  ```
+
+---
+
+<div align="center">
+Built with ❤️ for an accessible world.
+</div>

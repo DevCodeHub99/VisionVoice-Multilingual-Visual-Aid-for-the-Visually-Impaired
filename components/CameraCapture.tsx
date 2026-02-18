@@ -1,104 +1,124 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+
+import { useRef, useEffect, useState, useImperativeHandle, forwardRef, useCallback, memo } from 'react';
 
 interface CameraCaptureProps {
   onCapture: (imageDataUrl: string) => void;
-  onClose: () => void;
+  isActive: boolean;
 }
 
-const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose }) => {
+export interface CameraHandle {
+  capture: () => void;
+}
+
+const CameraCapture = forwardRef<CameraHandle, CameraCaptureProps>(({ onCapture, isActive }, ref) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  }, []);
 
   const startCamera = useCallback(async () => {
+    stopCamera(); // Ensure previous stream is stopped
+
+    // Check if camera is already starting to avoid race conditions
+    if (streamRef.current) return;
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      const newStream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: 'environment', // Use back camera on mobile
+          facingMode: 'environment', // Prefer back camera
           width: { ideal: 1920 },
           height: { ideal: 1080 }
         }
       });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+
+      // If component unmounted or deactivated during await, stop stream immediately
+      if (!videoRef.current) { // simple check, but could be more robust with a mounted ref
+        newStream.getTracks().forEach(t => t.stop());
+        return;
       }
+
+      streamRef.current = newStream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = newStream;
+      }
+      setError(null);
     } catch (err) {
       console.error("Error accessing camera:", err);
-      setError("Could not access the camera. Please ensure permissions are granted and try again.");
+      // Only set error if we are still active, though strictly speaking set state on unmounted is guarded by React now
+      setError("Camera access denied. Please enable permissions.");
     }
-  }, []);
+  }, [stopCamera]);
 
   useEffect(() => {
-    startCamera();
+    let isMounted = true;
+
+    if (isActive) {
+      startCamera();
+    } else {
+      stopCamera();
+    }
 
     return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-      }
+      isMounted = false;
+      stopCamera();
     };
-  }, [startCamera]);
+  }, [isActive, startCamera, stopCamera]);
 
-  const handleCapture = () => {
+  const handleCapture = useCallback(() => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const context = canvas.getContext('2d');
-      if (context) {
-        context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-        const dataUrl = canvas.toDataURL('image/jpeg');
-        onCapture(dataUrl);
+
+      // Check if video is ready
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const context = canvas.getContext('2d');
+        if (context) {
+          context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.8); // Compress quality to 0.8
+          onCapture(dataUrl);
+        }
       }
     }
-  };
+  }, [onCapture]);
+
+  useImperativeHandle(ref, () => ({
+    capture: handleCapture
+  }));
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black animate-[fade-in_0.3s_ease-out]">
-      {/* Top Bar */}
-      <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10 bg-gradient-to-b from-black/50 to-transparent">
-        <span className="text-white font-medium drop-shadow-md">Capture Image</span>
-        <button
-          onClick={onClose}
-          className="w-10 h-10 rounded-full bg-black/40 backdrop-blur text-white flex items-center justify-center border border-white/20 active:scale-95 transition-transform"
-          aria-label="Close Camera"
-        >
-          <i className="fa-solid fa-xmark text-xl"></i>
-        </button>
-      </div>
-
-      <div className="flex-grow relative flex items-center justify-center bg-black">
-        {error ? (
-          <div className="text-center p-6 max-w-xs">
-            <i className="fa-solid fa-triangle-exclamation text-4xl text-red-500 mb-4"></i>
-            <p className="text-red-100 font-medium">{error}</p>
-          </div>
-        ) : (
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            className="w-full h-full object-cover"
-          />
-        )}
-      </div>
-
-      {/* Bottom Controls */}
-      <div className="absolute bottom-0 left-0 right-0 p-8 pb-12 flex justify-center items-center bg-gradient-to-t from-black/80 to-transparent">
-        <button
-          onClick={handleCapture}
-          disabled={!!error}
-          className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center bg-white/20 backdrop-blur-sm active:scale-95 active:bg-white/40 transition-all shadow-lg shadow-black/30"
-          aria-label="Take Photo"
-        >
-          <div className="w-16 h-16 bg-white rounded-full"></div>
-        </button>
-      </div>
-
+    <div className="absolute inset-0 z-0 bg-black overflow-hidden">
+      {error ? (
+        <div className="flex flex-col items-center justify-center h-full text-center p-6">
+          <i className="fa-solid fa-triangle-exclamation text-4xl text-red-500 mb-4"></i>
+          <p className="text-red-100 font-medium">{error}</p>
+          <button onClick={startCamera} className="mt-4 px-4 py-2 bg-slate-800 rounded text-white">Retry</button>
+        </div>
+      ) : (
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="w-full h-full object-cover opacity-80"
+        />
+      )}
       <canvas ref={canvasRef} className="hidden" />
+      {/* Dark Gradient Overlay for text readability */}
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-transparent to-slate-900/90 pointer-events-none"></div>
     </div>
   );
-};
+});
 
-export default CameraCapture;
+export default memo(CameraCapture);
