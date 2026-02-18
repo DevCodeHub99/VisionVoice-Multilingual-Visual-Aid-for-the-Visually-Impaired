@@ -1,9 +1,17 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Task, LanguageOption } from './types';
+
+import { FC, useState, useRef, useEffect, useCallback } from 'react';
+import { Task } from './types';
 import { LANGUAGES } from './constants';
-import { generateDescription } from './services/geminiService';
-import Header from './components/Header';
 import CameraCapture from './components/CameraCapture';
+import Header from './components/Header';
+import BottomNav from './components/BottomNav';
+import ResultSheet from './components/ResultSheet';
+
+import { useSpeech } from './hooks/useSpeech';
+import { useImageProcessing } from './hooks/useImageProcessing';
+import { useHaptics } from './hooks/useHaptics';
+import { useCamera } from './hooks/useCamera';
+
 
 // Helper to convert file to base64
 const fileToBase64 = (file: File): Promise<{ data: string; mimeType: string }> => {
@@ -20,193 +28,174 @@ const fileToBase64 = (file: File): Promise<{ data: string; mimeType: string }> =
     });
 };
 
-const App: React.FC = () => {
-    const [image, setImage] = useState<string | null>(null);
-    const [imageMimeType, setImageMimeType] = useState<string | null>(null);
+/**
+ * visionvoice Main Component
+ * 
+ * Orchestrates the overall application flow:
+ *- Language and task (Describe/Read) selection
+ *- Camera capture and image upload management
+ *- AI processing lifecycle management
+ *- Speech-to-text (TTS), Haptics, and UI feedback
+ */
+const App: FC = () => {
     const [task, setTask] = useState<Task>(Task.DESCRIBE);
     const [language, setLanguage] = useState<string>(LANGUAGES[0].code);
-    const [output, setOutput] = useState<string>('');
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [error, setError] = useState<string | null>(null);
-    const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
-    const [isCameraOpen, setIsCameraOpen] = useState<boolean>(false);
-
+    const [activeTab, setActiveTab] = useState<'camera' | 'upload'>('camera');
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
-    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    // Custom Hooks
+    const { isSpeaking, speak, speakAnnouncement, toggleSpeech, stopSpeech } = useSpeech({ language });
+    const { triggerHaptic } = useHaptics();
+    const { cameraRef, onCaptureClick } = useCamera();
+
+    const {
+        image,
+        output,
+        isLoading,
+        error,
+        processImage,
+        reset
+    } = useImageProcessing({
+        language,
+        onStartProcessing: useCallback(() => {
+            triggerHaptic();
+            stopSpeech();
+            speakAnnouncement("Processing image.");
+        }, [triggerHaptic, stopSpeech, speakAnnouncement]),
+        onSuccess: useCallback((result) => {
+            triggerHaptic(); // Success vibration
+            speak(result, language);
+        }, [triggerHaptic, speak, language]),
+        onError: useCallback((err) => {
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+            speakAnnouncement("An error occurred. Please try again.");
+        }, [speakAnnouncement])
+    });
+
+    // Initial Voice Hint
+    useEffect(() => {
+        setTimeout(() => {
+            speakAnnouncement("Camera ready. Select mode at bottom or tap center to capture.");
+        }, 1000);
+    }, []); // Only runs once on mount. Consistent.
+
+    // Handlers
+    /**
+     * Handles image file uploads from the device gallery.
+     * Converts the file to base-64 and triggers AI processing.
+     */
+    const handleImageUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
+            triggerHaptic();
             try {
                 const { data, mimeType } = await fileToBase64(file);
-                setImage(`data:${mimeType};base64,${data}`);
-                setImageMimeType(mimeType);
-                setOutput('');
-                setError(null);
+                processImage(`data:${mimeType};base64,${data}`, mimeType, task);
             } catch (err) {
-                setError('Failed to read the image file.');
+                speakAnnouncement("Failed to upload image.");
             }
         }
-    };
-    
-    const handleCameraCapture = (imageDataUrl: string) => {
+    }, [triggerHaptic, processImage, task, speakAnnouncement]);
+
+    // Called by Camera component when it captures a frame
+    /**
+     * Handles image capture from the live camera stream.
+     */
+    const handleCameraCapture = useCallback((imageDataUrl: string) => {
         const [header, data] = imageDataUrl.split(',');
         const mimeType = header.match(/:(.*?);/)?.[1] || 'image/jpeg';
-        setImage(imageDataUrl);
-        setImageMimeType(mimeType);
-        setOutput('');
-        setError(null);
-        setIsCameraOpen(false);
-    };
+        processImage(imageDataUrl, mimeType, task);
+    }, [processImage, task]);
 
-    const speak = useCallback((text: string, lang: string) => {
-        if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    const handleReset = useCallback(() => {
+        reset();
+        stopSpeech();
+        speakAnnouncement("Camera ready.");
+    }, [reset, stopSpeech, speakAnnouncement]);
 
-        window.speechSynthesis.cancel();
-        
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = lang;
-        utterance.onstart = () => setIsSpeaking(true);
-        utterance.onend = () => setIsSpeaking(false);
-        utterance.onerror = () => setIsSpeaking(false);
-        utteranceRef.current = utterance;
-        
-        window.speechSynthesis.speak(utterance);
+    const handleCopy = useCallback(() => {
+        navigator.clipboard.writeText(output);
+        speakAnnouncement("Copied");
+    }, [output, speakAnnouncement]);
+
+    const handleUploadClick = useCallback(() => {
+        fileInputRef.current?.click();
     }, []);
 
-    useEffect(() => {
-      // Cleanup speechSynthesis on component unmount
-      return () => {
-        if (window.speechSynthesis) {
-          window.speechSynthesis.cancel();
-        }
-      };
-    }, []);
+    const handleCaptureClick = useCallback(() => {
+        triggerHaptic();
+        onCaptureClick();
+    }, [triggerHaptic, onCaptureClick]);
 
-    const handleSubmit = async () => {
-        if (!image || !imageMimeType) {
-            setError('Please upload or capture an image first.');
-            return;
-        }
-        setIsLoading(true);
-        setError(null);
-        setOutput('');
-        if (isSpeaking) {
-            window.speechSynthesis.cancel();
-            setIsSpeaking(false);
-        }
+    /**
+     * Updates the current application language and provides voice feedback.
+     */
+    const handleLanguageChange = useCallback((lang: string) => {
+        setLanguage(lang);
+        speakAnnouncement(`Language changed to ${LANGUAGES.find(l => l.code === lang)?.name}`);
+    }, [speakAnnouncement]);
 
-        const base64Data = image.split(',')[1];
-        const selectedLanguage = LANGUAGES.find(l => l.code === language);
-        const result = await generateDescription(base64Data, imageMimeType, task, selectedLanguage?.name || 'English');
+    const handleTaskChange = useCallback((t: Task) => {
+        setTask(t);
+        speakAnnouncement(`${t === Task.DESCRIBE ? 'Describe' : 'Read Text'} mode`);
+    }, [speakAnnouncement]);
 
-        setOutput(result);
-        if (!result.startsWith('Error:')) {
-            speak(result, language);
-        } else {
-            setError(result);
-        }
-        setIsLoading(false);
-    };
-    
-    const toggleSpeech = () => {
-        if (!window.speechSynthesis) return;
-        
-        if (isSpeaking) {
-            window.speechSynthesis.pause();
-            setIsSpeaking(false);
-        } else {
-            if (window.speechSynthesis.paused) {
-                window.speechSynthesis.resume();
-                setIsSpeaking(true);
-            } else if (output) {
-                speak(output, language);
-            }
-        }
-    };
-
-    const stopSpeech = () => {
-        if (window.speechSynthesis) {
-            window.speechSynthesis.cancel();
-            setIsSpeaking(false);
-        }
-    };
-
+    const handleToggleSpeech = useCallback(() => {
+        toggleSpeech(output);
+    }, [toggleSpeech, output]);
 
     return (
-        <div className="min-h-screen bg-slate-900 text-gray-100 flex flex-col items-center" aria-busy={isLoading}>
-            <Header />
-            {isCameraOpen && <CameraCapture onCapture={handleCameraCapture} onClose={() => setIsCameraOpen(false)} />}
-            <main className="container mx-auto p-4 md:p-8 flex-grow w-full">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Left Column: Input & Controls */}
-                    <section className="bg-slate-800/50 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-slate-700 flex flex-col space-y-6">
-                        <h2 className="text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400 border-b-2 border-slate-600 pb-2">1. Provide an Image</h2>
-                        <div className="flex flex-col sm:flex-row gap-4">
-                            <button onClick={() => fileInputRef.current?.click()} className="flex-1 text-lg px-6 py-3 bg-purple-600 rounded-lg font-semibold hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75 transition duration-200 flex items-center justify-center">
-                                <i className="fa-solid fa-upload mr-3"></i> Upload Image
-                            </button>
-                             <button onClick={() => setIsCameraOpen(true)} className="flex-1 text-lg px-6 py-3 bg-cyan-600 rounded-lg font-semibold hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-75 transition duration-200 flex items-center justify-center">
-                                <i className="fa-solid fa-camera-retro mr-3"></i> Use Camera
-                            </button>
-                            <input type="file" ref={fileInputRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
-                        </div>
-                        {image && (
-                            <div className="mt-4 border-2 border-slate-700 rounded-lg p-2 bg-slate-900">
-                                <img src={image} alt="User-provided for analysis" className="max-h-64 w-full object-contain rounded" />
-                            </div>
-                        )}
+        <div className="fixed inset-0 bg-slate-900 text-slate-100 overflow-hidden font-sans">
 
-                        <h2 className="text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400 border-b-2 border-slate-600 pb-2">2. Choose a Task</h2>
-                        <div className="flex bg-slate-700/50 rounded-lg p-1">
-                            <button onClick={() => setTask(Task.DESCRIBE)} className={`flex-1 p-3 rounded-md font-semibold transition ${task === Task.DESCRIBE ? 'bg-purple-600 text-white' : 'hover:bg-slate-600'}`}>Describe Scene</button>
-                            <button onClick={() => setTask(Task.READ)} className={`flex-1 p-3 rounded-md font-semibold transition ${task === Task.READ ? 'bg-purple-600 text-white' : 'hover:bg-slate-600'}`}>Read Text</button>
-                        </div>
-                        
-                        <h2 className="text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400 border-b-2 border-slate-600 pb-2">3. Select Language</h2>
-                        <select value={language} onChange={(e) => setLanguage(e.target.value)} className="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-lg">
-                            {LANGUAGES.map((lang: LanguageOption) => (
-                                <option key={lang.code} value={lang.code}>{lang.name}</option>
-                            ))}
-                        </select>
-                        
-                        <button onClick={handleSubmit} disabled={isLoading || !image} className="w-full text-xl px-6 py-4 mt-4 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg font-bold hover:from-green-600 hover:to-teal-600 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75 disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center">
-                           {isLoading ? (
-                                <i className="fa-solid fa-spinner fa-spin mr-3"></i>
-                           ) : (
-                               <i className="fa-solid fa-wand-magic-sparkles mr-3"></i>
-                           )}
-                           {isLoading ? 'Analyzing...' : 'Analyze Image'}
-                        </button>
-                    </section>
+            {/* 1. FULL SCREEN CAMERA BACKGROUND */}
+            <CameraCapture
+                ref={cameraRef}
+                onCapture={handleCameraCapture}
+                isActive={!image}
+            />
 
-                    {/* Right Column: Output */}
-                    <section className="bg-slate-800/50 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-slate-700 flex flex-col">
-                        <h2 className="text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400 border-b-2 border-slate-600 pb-2 mb-4">AI Generated Response</h2>
-                        {error && <div className="bg-red-900/50 border border-red-700 text-red-200 p-4 rounded-lg">{error}</div>}
-                        <div className="flex-grow bg-slate-900/70 rounded-lg p-4 overflow-y-auto min-h-[200px] ring-1 ring-slate-700" aria-live="polite">
-                            {isLoading ? (
-                                <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                                    <i className="fa-solid fa-spinner fa-spin text-4xl mb-4"></i>
-                                    <p className="text-lg">Generating response...</p>
-                                </div>
-                            ) : (
-                                <p className="text-lg whitespace-pre-wrap">{output || "The analysis result will appear here."}</p>
-                            )}
-                        </div>
-                        {output && !error && (
-                            <div className="flex justify-center items-center space-x-4 mt-4 pt-4 border-t border-slate-700">
-                                <button onClick={toggleSpeech} className="px-6 py-3 text-lg bg-blue-600 rounded-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-center transition-colors">
-                                    <i className={`fa-solid ${isSpeaking ? 'fa-pause' : 'fa-play'} mr-2`}></i> {isSpeaking ? 'Pause' : 'Read Aloud'}
-                                </button>
-                                <button onClick={stopSpeech} className="px-6 py-3 text-lg bg-red-600 rounded-lg font-semibold hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 flex items-center justify-center transition-colors">
-                                    <i className="fa-solid fa-stop mr-2"></i> Stop
-                                </button>
-                            </div>
-                        )}
-                    </section>
+            {/* 2. MAIN UI OVERLAY */}
+            <div className={`relative z-10 flex flex-col justify-between h-full transition-opacity duration-300 ${image ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+
+                <Header
+                    language={language}
+                    onLanguageChange={handleLanguageChange}
+                    onSettingsClick={() => { }}
+                />
+
+                {/* Center Content Area */}
+                <div className="flex-grow">
+                    {/* Center Message (Optional Aid) */}
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none opacity-60">
+                        <i className="fa-solid fa-expand text-white/20 text-6xl"></i>
+                    </div>
                 </div>
-            </main>
+
+                <BottomNav
+                    task={task}
+                    activeTab={activeTab}
+                    onTaskChange={handleTaskChange}
+                    onTabChange={setActiveTab}
+                    onCaptureClick={handleCaptureClick}
+                    onUploadClick={handleUploadClick}
+                    fileInputRef={fileInputRef}
+                    handleImageUpload={handleImageUpload}
+                />
+            </div>
+
+            {/* 3. RESULTS SHEET (Slide Up) */}
+            <ResultSheet
+                image={image}
+                isLoading={isLoading}
+                error={error}
+                output={output}
+                task={task}
+                isSpeaking={isSpeaking}
+                onReset={handleReset}
+                onToggleSpeech={handleToggleSpeech}
+                onCopy={handleCopy}
+            />
+
         </div>
     );
 };

@@ -1,3 +1,4 @@
+/// <reference types="node" />
 {
   "compilerOptions": {
     "target": "ES2022",
@@ -10,9 +11,9 @@
       "DOM.Iterable"
     ],
     "skipLibCheck": true,
-    "types": [
-      "node"
-    ],
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    /* "types": ["node"] - Removed to allow auto-inclusion of all @types packages */
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "moduleDetection": "force",
