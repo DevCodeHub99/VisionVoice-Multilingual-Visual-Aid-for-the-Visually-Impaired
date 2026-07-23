@@ -12,6 +12,6 @@ export const LANGUAGES: LanguageOption[] = [
 ];
 
 export const PROMPT_TEMPLATES: Record<Task, string> = {
-  [Task.DESCRIBE]: 'Describe this image in detail for a visually impaired person. Be vivid and comprehensive.',
-  [Task.READ]: 'Extract all text from this image, reading it from top to bottom. If there is no text, state that clearly.',
+  [Task.DESCRIBE]: 'Describe the key elements of this image for a visually impaired person. Keep the description crisp, direct, and concise (2 to 3 sentences max). State the main subject and any critical safety details or hazards immediately. Do not use filler introductory phrases.',
+  [Task.READ]: 'Extract all visible text from this image accurately. Output only the extracted text without any preamble, explanation, or conversational filler. If no text is present, respond with "No text detected in image."',
 };

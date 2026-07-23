@@ -60,6 +60,9 @@ export const generateGeminiDescription = async (
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
+                    systemInstruction: {
+                        parts: [{ text: 'You are a crisp, direct visual aid assistant for visually impaired users. Give immediate, clear, to-the-point descriptions without conversational fluff or introductory chatter.' }]
+                    },
                     contents: [
                         {
                             parts: [
@@ -67,7 +70,11 @@ export const generateGeminiDescription = async (
                                 { text: fullPrompt }
                             ]
                         }
-                    ]
+                    ],
+                    generationConfig: {
+                        maxOutputTokens: 300,
+                        temperature: 0.2
+                    }
                 }),
                 signal: controller.signal
             });

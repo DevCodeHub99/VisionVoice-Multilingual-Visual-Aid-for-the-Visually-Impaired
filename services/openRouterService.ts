@@ -63,9 +63,13 @@ export const generateOpenRouterDescription = async (
                 },
                 body: JSON.stringify({
                     model,
-                    max_tokens: 1024,
+                    max_tokens: 300,
                     temperature: 0.2,
                     messages: [
+                        {
+                            role: 'system',
+                            content: 'You are a crisp, direct visual aid assistant for visually impaired users. Give immediate, clear, to-the-point descriptions without conversational fluff or introductory chatter.'
+                        },
                         {
                             role: 'user',
                             content: [
