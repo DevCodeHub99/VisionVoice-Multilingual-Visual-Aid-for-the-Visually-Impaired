@@ -1,11 +1,13 @@
 
 import { FC, useState, useRef, useEffect, useCallback } from 'react';
-import { Task } from './types';
+import { Task, UserSettings } from './types';
 import { LANGUAGES } from './constants';
+import { obfuscateKey, deobfuscateKey } from './utils/security';
 import CameraCapture from './components/CameraCapture';
 import Header from './components/Header';
 import BottomNav from './components/BottomNav';
 import ResultSheet from './components/ResultSheet';
+import SettingsModal from './components/SettingsModal';
 
 import { useSpeech } from './hooks/useSpeech';
 import { useImageProcessing } from './hooks/useImageProcessing';
@@ -41,6 +43,27 @@ const App: FC = () => {
     const [task, setTask] = useState<Task>(Task.DESCRIBE);
     const [language, setLanguage] = useState<string>(LANGUAGES[0].code);
     const [activeTab, setActiveTab] = useState<'camera' | 'upload'>('camera');
+    const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+    const [userSettings, setUserSettings] = useState<UserSettings>(() => {
+        try {
+            const saved = localStorage.getItem('visionvoice_settings');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                const rawOpenRouter = parsed.openRouterKeyEnc ? deobfuscateKey(parsed.openRouterKeyEnc) : (parsed.openRouterKey || parsed.apiKey || '');
+                const rawGemini = parsed.geminiKeyEnc ? deobfuscateKey(parsed.geminiKeyEnc) : (parsed.geminiKey || '');
+                return {
+                    provider: parsed.provider || 'openrouter',
+                    openRouterKey: rawOpenRouter,
+                    geminiKey: rawGemini,
+                    model: parsed.model || 'openrouter/free',
+                    rememberKey: parsed.rememberKey ?? true
+                };
+            }
+        } catch {
+            // fallback
+        }
+        return { provider: 'openrouter', openRouterKey: '', geminiKey: '', model: 'openrouter/free', rememberKey: true };
+    });
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Custom Hooks
@@ -57,6 +80,7 @@ const App: FC = () => {
         reset
     } = useImageProcessing({
         language,
+        userSettings,
         onStartProcessing: useCallback(() => {
             triggerHaptic();
             stopSpeech();
@@ -67,17 +91,22 @@ const App: FC = () => {
             speak(result, language);
         }, [triggerHaptic, speak, language]),
         onError: useCallback((err) => {
-            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+            triggerHaptic([100, 50, 100]);
             speakAnnouncement("An error occurred. Please try again.");
-        }, [speakAnnouncement])
+        }, [triggerHaptic, speakAnnouncement])
     });
 
     // Initial Voice Hint
     useEffect(() => {
         setTimeout(() => {
-            speakAnnouncement("Camera ready. Select mode at bottom or tap center to capture.");
+            const activeKey = userSettings.provider === 'gemini' ? userSettings.geminiKey : userSettings.openRouterKey;
+            if (!activeKey?.trim()) {
+                speakAnnouncement("Welcome to VisionVoice. Please tap the Setup Key icon at top right to enter your API key.");
+            } else {
+                speakAnnouncement("Camera ready. Select mode at bottom or tap center to capture.");
+            }
         }, 1000);
-    }, []); // Only runs once on mount. Consistent.
+    }, []);
 
     // Handlers
     /**
@@ -144,8 +173,44 @@ const App: FC = () => {
         toggleSpeech(output);
     }, [toggleSpeech, output]);
 
+    const handleSaveSettings = useCallback((newSettings: UserSettings) => {
+        setUserSettings(newSettings);
+        try {
+            if (newSettings.rememberKey) {
+                const toStore = {
+                    provider: newSettings.provider,
+                    openRouterKeyEnc: obfuscateKey(newSettings.openRouterKey),
+                    geminiKeyEnc: obfuscateKey(newSettings.geminiKey),
+                    model: newSettings.model,
+                    rememberKey: true
+                };
+                localStorage.setItem('visionvoice_settings', JSON.stringify(toStore));
+            } else {
+                const toStore = {
+                    provider: newSettings.provider,
+                    openRouterKeyEnc: '',
+                    geminiKeyEnc: '',
+                    model: newSettings.model,
+                    rememberKey: false
+                };
+                localStorage.setItem('visionvoice_settings', JSON.stringify(toStore));
+            }
+        } catch {
+            console.warn("Could not save settings to localStorage");
+        }
+        speakAnnouncement("Settings saved");
+    }, [speakAnnouncement]);
+
+    const handleOpenSettings = useCallback(() => {
+        setIsSettingsOpen(true);
+    }, []);
+
+    const handleCloseSettings = useCallback(() => {
+        setIsSettingsOpen(false);
+    }, []);
+
     return (
-        <div className="fixed inset-0 bg-slate-900 text-slate-100 overflow-hidden font-sans">
+        <div className="fixed inset-0 h-[100dvh] bg-slate-950 text-slate-100 overflow-hidden font-sans select-none">
 
             {/* 1. FULL SCREEN CAMERA BACKGROUND */}
             <CameraCapture
@@ -159,8 +224,9 @@ const App: FC = () => {
 
                 <Header
                     language={language}
+                    userSettings={userSettings}
                     onLanguageChange={handleLanguageChange}
-                    onSettingsClick={() => { }}
+                    onSettingsClick={handleOpenSettings}
                 />
 
                 {/* Center Content Area */}
@@ -194,6 +260,15 @@ const App: FC = () => {
                 onReset={handleReset}
                 onToggleSpeech={handleToggleSpeech}
                 onCopy={handleCopy}
+                onOpenSettings={handleOpenSettings}
+            />
+
+            {/* 4. SETTINGS MODAL (BYOK & Model Selection) */}
+            <SettingsModal
+                isOpen={isSettingsOpen}
+                onClose={handleCloseSettings}
+                settings={userSettings}
+                onSaveSettings={handleSaveSettings}
             />
 
         </div>

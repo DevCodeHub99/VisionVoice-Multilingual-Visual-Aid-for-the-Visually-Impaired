@@ -33,16 +33,21 @@ const CameraCapture = forwardRef<CameraHandle, CameraCaptureProps>(({ onCapture,
     if (streamRef.current) return;
 
     try {
-      const newStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'environment', // Prefer back camera
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
-        }
-      });
+      let newStream: MediaStream;
+      try {
+        newStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: 'environment', // Prefer back camera on mobile
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          }
+        });
+      } catch {
+        // Fallback for laptops/desktops with standard webcams
+        newStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      }
 
-      // If component unmounted or deactivated during await, stop stream immediately
-      if (!videoRef.current) { // simple check, but could be more robust with a mounted ref
+      if (!videoRef.current) {
         newStream.getTracks().forEach(t => t.stop());
         return;
       }
@@ -54,14 +59,11 @@ const CameraCapture = forwardRef<CameraHandle, CameraCaptureProps>(({ onCapture,
       setError(null);
     } catch (err) {
       console.error("Error accessing camera:", err);
-      // Only set error if we are still active, though strictly speaking set state on unmounted is guarded by React now
-      setError("Camera access denied. Please enable permissions.");
+      setError("Camera access denied. Please enable camera permissions.");
     }
   }, [stopCamera]);
 
   useEffect(() => {
-    let isMounted = true;
-
     if (isActive) {
       startCamera();
     } else {
@@ -69,7 +71,6 @@ const CameraCapture = forwardRef<CameraHandle, CameraCaptureProps>(({ onCapture,
     }
 
     return () => {
-      isMounted = false;
       stopCamera();
     };
   }, [isActive, startCamera, stopCamera]);

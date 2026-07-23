@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react';
-import { generateDescription } from '../services/geminiService';
-import { Task, LanguageOption } from '../types';
+import { generateDescription } from '../services/aiService';
+import { Task, LanguageOption, UserSettings } from '../types';
 import { LANGUAGES } from '../constants';
 
 interface UseImageProcessingProps {
     language: string;
+    userSettings?: UserSettings;
     onStartProcessing: () => void;
     onSuccess: (result: string) => void;
     onError: (error: string) => void;
@@ -15,13 +16,14 @@ interface UseImageProcessingProps {
  * 
  * @param props - Configuration properties for image processing.
  * @param props.language - The current language code (e.g., 'en-US').
+ * @param props.userSettings - Optional user configured BYOK API key and model.
  * @param props.onStartProcessing - Callback triggered when the AI analysis starts.
  * @param props.onSuccess - Callback triggered when the AI analysis succeeds, takes the result text.
  * @param props.onError - Callback triggered when the AI analysis fails, takes the error message.
  * 
  * @returns Object containing state and helper functions for image processing.
  */
-export const useImageProcessing = ({ language, onStartProcessing, onSuccess, onError }: UseImageProcessingProps) => {
+export const useImageProcessing = ({ language, userSettings, onStartProcessing, onSuccess, onError }: UseImageProcessingProps) => {
     const [image, setImage] = useState<string | null>(null);
     const [imageMimeType, setImageMimeType] = useState<string | null>(null);
     const [output, setOutput] = useState<string>('');
@@ -48,18 +50,25 @@ export const useImageProcessing = ({ language, onStartProcessing, onSuccess, onE
         const selectedLanguage = LANGUAGES.find(l => l.code === language);
 
         try {
-            const result = await generateDescription(base64Data, mimeType, task, selectedLanguage?.name || 'English');
-            setOutput(result);
+            const result = await generateDescription(
+                base64Data,
+                mimeType,
+                task,
+                selectedLanguage?.name || 'English',
+                userSettings
+            );
             setIsLoading(false);
 
-            if (!result.startsWith('Error:')) {
-                onSuccess(result);
+            if (result.success) {
+                setOutput(result.text);
+                setError(null);
+                onSuccess(result.text);
             } else {
-                setError(result);
-                onError(result);
+                setError(result.error);
+                onError(result.error);
             }
         } catch (e) {
-            const errorMsg = "Something went wrong.";
+            const errorMsg = "Something went wrong during image processing.";
             setError(errorMsg);
             setIsLoading(false);
             onError(errorMsg);

@@ -12,6 +12,7 @@ interface ResultSheetProps {
     onReset: () => void;
     onToggleSpeech: () => void;
     onCopy: () => void;
+    onOpenSettings?: () => void;
 }
 
 const ResultSheet = memo(({
@@ -23,12 +24,21 @@ const ResultSheet = memo(({
     isSpeaking,
     onReset,
     onToggleSpeech,
-    onCopy
+    onCopy,
+    onOpenSettings
 }: ResultSheetProps) => {
+    const isKeyError = Boolean(
+        error && (
+            error.toLowerCase().includes('key') ||
+            error.toLowerCase().includes('settings') ||
+            error.toLowerCase().includes('quota')
+        )
+    );
+
     return (
         <div className={`fixed inset-x-0 bottom-0 z-40 transform transition-transform duration-500 ease-out flex flex-col max-h-[85vh] ${image ? 'translate-y-0' : 'translate-y-full'}`}>
             {/* Drag Handle Area */}
-            <div className="h-6 w-full flex justify-center items-center cursor-pointer" onClick={() => { }}>
+            <div className="h-6 w-full flex justify-center items-center cursor-pointer">
                 <div className="w-12 h-1.5 bg-white/30 rounded-full"></div>
             </div>
 
@@ -42,7 +52,7 @@ const ResultSheet = memo(({
                             {task === Task.DESCRIBE ? 'Scene Description' : 'Text Content'}
                         </span>
                         <h2 className="text-xl font-bold text-white">
-                            {isLoading ? 'Analyzing...' : 'Result'}
+                            {isLoading ? 'Analyzing...' : error ? 'Configuration Required' : 'Result'}
                         </h2>
                     </div>
                     <button
@@ -55,7 +65,7 @@ const ResultSheet = memo(({
                 </div>
 
                 {/* Scrollable Content */}
-                <div className="flex-grow overflow-y-auto px-6 py-4">
+                <div className="flex-grow overflow-y-auto px-6 py-4" aria-live="polite" role="status">
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center space-y-4 py-8 opacity-80">
                             <div className="flex space-x-2">
@@ -66,14 +76,43 @@ const ResultSheet = memo(({
                             <p className="text-slate-400 font-light">Processing visual data...</p>
                         </div>
                     ) : error ? (
-                        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-200 flex items-center space-x-3">
-                            <i className="fa-solid fa-triangle-exclamation text-xl"></i>
-                            <p>{error}</p>
+                        <div className="space-y-4">
+                            <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 text-amber-200 flex items-start space-x-3">
+                                <i className="fa-solid fa-key text-amber-400 text-xl mt-0.5 flex-shrink-0"></i>
+                                <div className="space-y-1">
+                                    <p className="font-semibold text-amber-300">API Key Required</p>
+                                    <p className="text-sm leading-relaxed text-slate-300">{error}</p>
+                                </div>
+                            </div>
+
+                            {isKeyError && onOpenSettings && (
+                                <button
+                                    onClick={() => {
+                                        onReset();
+                                        onOpenSettings();
+                                    }}
+                                    className="w-full py-4 px-6 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 active:scale-[0.98] font-bold text-white rounded-2xl shadow-xl shadow-violet-950/50 flex items-center justify-center space-x-3 text-base transition-all"
+                                >
+                                    <i className="fa-solid fa-gear text-lg"></i>
+                                    <span>Open AI Settings & Add Key</span>
+                                </button>
+                            )}
                         </div>
                     ) : (
-                        <div className="space-y-6">
+                        <div className="space-y-4">
+                            {/* Animated Equalizer Waveform when speaking */}
+                            {isSpeaking && (
+                                <div className="flex items-center space-x-1.5 py-1.5 px-3 bg-violet-950/60 border border-violet-500/30 rounded-xl w-fit shadow-inner">
+                                    <span className="w-1 h-4 bg-violet-400 rounded-full animate-bounce [animation-delay:-0.4s]"></span>
+                                    <span className="w-1 h-6 bg-cyan-400 rounded-full animate-bounce [animation-delay:-0.2s]"></span>
+                                    <span className="w-1 h-3 bg-fuchsia-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                                    <span className="w-1 h-5 bg-white rounded-full animate-bounce [animation-delay:-0.1s]"></span>
+                                    <span className="text-xs font-semibold text-violet-200 ml-1.5">Reading Aloud...</span>
+                                </div>
+                            )}
+
                             {/* Text Output */}
-                            <p className="text-xl md:text-2xl font-medium leading-relaxed text-slate-100 whitespace-pre-wrap">
+                            <p className="text-xl md:text-2xl font-medium leading-relaxed text-slate-100 whitespace-pre-wrap select-text">
                                 {output}
                             </p>
                         </div>

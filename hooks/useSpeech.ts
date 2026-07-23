@@ -13,7 +13,22 @@ interface UseSpeechProps {
  */
 export const useSpeech = ({ language }: UseSpeechProps) => {
     const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
+    const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
     const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+    useEffect(() => {
+        if (typeof window === 'undefined' || !window.speechSynthesis) return;
+
+        const updateVoices = () => {
+            const availableVoices = window.speechSynthesis.getVoices();
+            setVoices(availableVoices);
+        };
+
+        updateVoices();
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = updateVoices;
+        }
+    }, []);
 
     const speakAnnouncement = useCallback((text: string) => {
         if ('speechSynthesis' in window) {
@@ -32,13 +47,21 @@ export const useSpeech = ({ language }: UseSpeechProps) => {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = lang;
         utterance.rate = 0.9;
+
+        // Attempt to match exact language tag or prefix
+        const langPrefix = lang.split('-')[0];
+        const matchedVoice = voices.find((v: SpeechSynthesisVoice) => v.lang === lang) || voices.find((v: SpeechSynthesisVoice) => v.lang.startsWith(langPrefix));
+        if (matchedVoice) {
+            utterance.voice = matchedVoice;
+        }
+
         utterance.onstart = () => setIsSpeaking(true);
         utterance.onend = () => setIsSpeaking(false);
         utterance.onerror = () => setIsSpeaking(false);
         utteranceRef.current = utterance;
 
         window.speechSynthesis.speak(utterance);
-    }, []);
+    }, [voices]);
 
     const toggleSpeech = useCallback((text: string) => {
         if (!window.speechSynthesis) return;
