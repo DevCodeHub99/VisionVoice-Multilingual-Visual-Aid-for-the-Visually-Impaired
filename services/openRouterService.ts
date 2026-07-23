@@ -1,6 +1,6 @@
 import { Task, AnalysisResult } from '../types';
 import { PROMPT_TEMPLATES } from '../constants';
-import { sanitizeKeyInput, sanitizeErrorMessage } from '../utils/security';
+import { sanitizeKeyInput, sanitizeErrorMessage, cleanAIResponseText } from '../utils/security';
 
 /**
  * Generates an AI-powered description or text extraction using OpenRouter API.
@@ -91,12 +91,13 @@ export const generateOpenRouterDescription = async (
             }
 
             const data = await response.json();
-            const textResult = data.choices?.[0]?.message?.content;
+            const rawText = data.choices?.[0]?.message?.content;
+            const textResult = cleanAIResponseText(rawText || '');
 
             if (textResult) {
                 return {
                     success: true,
-                    text: textResult.trim()
+                    text: textResult
                 };
             }
         } catch (error) {

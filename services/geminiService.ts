@@ -1,6 +1,6 @@
 import { Task, AnalysisResult } from '../types';
 import { PROMPT_TEMPLATES } from '../constants';
-import { sanitizeKeyInput, sanitizeErrorMessage } from '../utils/security';
+import { sanitizeKeyInput, sanitizeErrorMessage, cleanAIResponseText } from '../utils/security';
 
 /**
  * Generates an AI-powered description or text extraction using Google Gemini REST API.
@@ -88,12 +88,13 @@ export const generateGeminiDescription = async (
             }
 
             const data = await response.json();
-            const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            const textResult = cleanAIResponseText(rawText || '');
 
             if (textResult) {
                 return {
                     success: true,
-                    text: textResult.trim()
+                    text: textResult
                 };
             }
         } catch (error) {

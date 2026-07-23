@@ -60,3 +60,20 @@ export const sanitizeErrorMessage = (error: unknown): string => {
 
     return message;
 };
+
+/**
+ * Cleans AI-generated response text by stripping safety metadata headers,
+ * system classification lines (e.g. "User Safety : safe", "Response Safety : safe"),
+ * and markdown code fence wrappers.
+ */
+export const cleanAIResponseText = (text: string): string => {
+    if (!text) return '';
+    return text
+        .replace(/^(User|Response|Input|Output|Model)?\s*Safety\s*:\s*\w+\s*/gmi, '')
+        .replace(/^(User|Response|Input|Output)\s*Safety\s*:\s*\w+$/gmi, '')
+        .replace(/User Safety\s*:\s*\w+/gi, '')
+        .replace(/Response Safety\s*:\s*\w+/gi, '')
+        .replace(/^```[a-z]*\n?/gi, '')
+        .replace(/\n?```$/gi, '')
+        .trim();
+};
